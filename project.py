@@ -24,7 +24,7 @@ Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
-# Create anti-forgery state token
+# Creates anti-forgery state token
 @app.route('/login')
 def showLogin():
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
@@ -151,7 +151,7 @@ def gdisconnect():
         response.headers['Content-Type'] = 'application/json'
         return response
 
-# catalog APIs
+# Returns a single category's items.
 @app.route('/catalog/<int:catalog_id>/')
 def catalogHome(catalog_id):
     catalogs = session.query(Catalog).all()
@@ -163,23 +163,21 @@ def catalogHome(catalog_id):
     else:
         return render_template('category.html', catalogs=catalogs, 
         catalog=catalog, items=items)
-    #return render_template('catalog.html', catalog=catalog)
 
-
+# Returns all entire catalog.
 @app.route('/')
 @app.route('/catalog/all')
 @app.route('/catalogs/')
 def showCatalogs():
     catalogs = session.query(Catalog).all()
     items = session.query(CatalogItem).all()
-
     if 'username' not in login_session:
         return render_template('publichome.html', catalogs=catalogs, 
             items=items)
     else:
         return render_template('home.html', catalogs=catalogs, items=items)
 
-
+# API for creating a new item.
 @app.route('/catalog/<int:catalog_id>/new/', methods=['GET','POST'])
 def newItem(catalog_id):
     if 'username' not in login_session:
@@ -197,23 +195,7 @@ def newItem(catalog_id):
         return render_template('newitem.html', catalog_id = 
             catalog_id)
 
-# @app.route('/catalog/new/', methods=['GET', 'POST'])
-# this is not working, maybe this should be a new template showing all catalogs?
-# def newCatalog():
-#     if 'username' not in login_session:
-#         return redirect('/login')
-
-#     if request.method == 'POST':
-#         newCatalog = Catalog(name = request.form['name'])
-#         session.add(newCatalog)
-#         session.commit()
-#         flash('New catalog added')
-#         return redirect(url_for('catalogHome', catalog_id = 
-#             catalog_id))
-#     else:
-#         return render_template('newsport.html')
-
-
+# API for editing an item.
 @app.route('/catalogs/<int:catalog_id>/<int:item_id>/edit', methods = ['GET', 'POST'])
 def editItem(catalog_id, item_id):
     if 'username' not in login_session:
@@ -221,6 +203,7 @@ def editItem(catalog_id, item_id):
             catalog_id, item_id = item_id)
 
     editedItem = session.query(CatalogItem).filter_by(id = item_id).one()
+
     if request.method == 'POST':
         if request.form['name']:
             editedItem.name = request.form['name']
@@ -232,6 +215,7 @@ def editItem(catalog_id, item_id):
         return render_template('edititem.html', catalog_id = 
             catalog_id, item_id = item_id, i = editedItem)
 
+# Returns item dtails.
 @app.route('/catalogs/<int:catalog_id>/<int:item_id>/details', methods = ['GET', 'POST'])
 def itemDetails(catalog_id, item_id):
     itemToShow = session.query(CatalogItem).filter_by(id = item_id).one()
@@ -242,8 +226,7 @@ def itemDetails(catalog_id, item_id):
         return render_template('itemdetails.html', catalog_id = 
             catalog_id, item_id = item_id, i = itemToShow)
 
-# Task 3: Create a route for deleteCatalogItem function here
-
+# API for deleting an item.
 @app.route('/catalog/<int:catalog_id>/<int:item_id>/delete/', methods = 
     ['GET', 'POST'])
 def deleteItem(catalog_id, item_id):
@@ -260,13 +243,13 @@ def deleteItem(catalog_id, item_id):
         return render_template('deleteitem.html', catalog_id = 
             catalog_id, item_id = item_id, item = deletedItem)
 
+# JSON endpoint returns all catalogs.
 @app.route('/catalog/JSON')
-def catalogHomeJSON():
+def catalogJSON():
     catalog = session.query(Catalog).all()
-    items = session.query(CatalogItem).all()
-    return jsonify(CatalogItems=[i.serialize for i in items])
+    return jsonify(Catalog=[i.serialize for i in catalog])
 
-
+# JSON endpoint that returns a single category's items.
 @app.route('/catalog/<int:catalog_id>/item/JSON')
 def catalogHomeJSON(catalog_id):
     catalog = session.query(Catalog).filter_by(id = 
@@ -275,6 +258,7 @@ def catalogHomeJSON(catalog_id):
         catalog_id).all()
     return jsonify(CatalogItems=[i.serialize for i in items])
 
+# JSON endpoint that returns a single item.
 @app.route('/catalog/<int:catalog_id>/item/<int:item_id>/JSON/')
 def catalogItemJSON(catalog_id, item_id):
     catalog = session.query(Catalog).filter_by(id = 
@@ -283,10 +267,7 @@ def catalogItemJSON(catalog_id, item_id):
     return jsonify(CatalogItem=[item.serialize])
 
 
-# @app.route('/')
-# def showcatalogs(catalog_id):
-
 if __name__ == '__main__':
     app.secret_key = 'super_secret_key'
     app.debug = True
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=8000)
